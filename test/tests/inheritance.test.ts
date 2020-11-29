@@ -50,3 +50,10 @@ it('should set all parent props for nested array items', async () => {
   // sanity check
   expect(firstGarage).not.toHaveProperty('_id');
 });
+
+it('should override inherited property accessor', () => {
+  const instance = new SkyscraperModel();
+
+  expect(instance.calculatedWidth).toEqual(400);
+  expect(instance.assignedGardenArea).toEqual(300);
+});

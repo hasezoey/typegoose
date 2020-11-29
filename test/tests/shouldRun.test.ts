@@ -398,3 +398,33 @@ it('should add query Methods', async () => {
   assertion(isDocumentArray(found), new Error('Found is not an document array'));
   expect(found[0].toObject()).toEqual(doc.toObject());
 });
+
+it('should output correct defaults with multiple inheritance [typegoose/typegoose#292]', () => {
+  class Parent {
+    // put default as a function if it needs to be dynamic
+    @prop({ default: () => 'base' })
+    public UID?: string;
+  }
+
+  class Child extends Parent {
+    @prop({ default: () => 'overwritten' })
+    public UID?: string;
+  }
+
+  class GrandChild extends Child {
+    @prop()
+    public something?: string;
+  }
+
+  const BaseModel = getModelForClass(Parent);
+  const ChildModel = getModelForClass(Child);
+  const GrandChildModel = getModelForClass(GrandChild);
+
+  const baseDoc = new BaseModel();
+  const childDoc = new ChildModel();
+  const grandChildDoc = new GrandChildModel();
+
+  expect(baseDoc.UID).toEqual('base');
+  expect(childDoc.UID).toEqual('overwritten');
+  expect(grandChildDoc.UID).toEqual('overwritten');
+});

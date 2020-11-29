@@ -9,6 +9,14 @@ import { getModelForClass, modelOptions, prop } from '../../src/typegoose';
 export class Building {
   @prop({ default: 100 })
   public width?: number;
+
+  public get calculatedWidth() {
+    return this.width;
+  }
+
+  public get assignedGardenArea() {
+    return 300;
+  }
 }
 
 export class OfficeBuilding extends Building {
@@ -35,6 +43,10 @@ export class Skyscraper extends OfficeBuilding {
 
   @prop({ type: Garage, _id: false })
   public garagesInArea?: Garage[];
+
+  public get calculatedWidth() {
+    return this.width! * this.doors!;
+  }
 }
 
 export const SkyscraperModel = getModelForClass(Skyscraper);
