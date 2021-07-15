@@ -1,5 +1,5 @@
 import { logger } from '../logSettings';
-import { buildSchema, mongoose } from '../typegoose';
+import { buildSchema, mongoose, Passthrough } from '../typegoose';
 import {
   AnyParamConstructor,
   DecoratedPropertyMetadata,
@@ -156,6 +156,43 @@ export function processProp(input: DecoratedPropertyMetadata): void {
   }
 
   const schemaProp = utils.initProperty(name, key, propKind);
+
+  // do this early, because the other options (enum, ref, refPath, discriminators) should not matter for this one
+  if (Type instanceof Passthrough) {
+    // this is because the check above narrows down the type, which somehow is not compatible
+    const newType: any = Type.raw;
+    switch (propKind) {
+      case WhatIsIt.ARRAY:
+        schemaProp[key] = {
+          ...schemaProp[key][0],
+          ...utils.mapArrayOptions(rawOptions, newType, target, key),
+        };
+
+        return;
+      case WhatIsIt.MAP:
+        const mapped = utils.mapOptions(rawOptions, newType, target, key);
+
+        schemaProp[key] = {
+          ...schemaProp[key],
+          ...mapped.outer,
+          type: Map,
+          of: { type: newType, ...mapped.inner },
+        };
+
+        return;
+      case WhatIsIt.NONE:
+        schemaProp[key] = {
+          ...schemaProp[key],
+          ...rawOptions,
+          type: newType,
+        };
+
+        return;
+      default:
+        /* istanbul ignore next */ // ignore because this case should really never happen (typescript prevents this)
+        throw new Error(`"${propKind}"(whatis(primitive)) is invalid for "${name}.${key}" [E013]`);
+    }
+  }
 
   if (!utils.isNullOrUndefined(rawOptions.set) || !utils.isNullOrUndefined(rawOptions.get)) {
     utils.assertion(typeof rawOptions.set === 'function', new TypeError(`"${name}.${key}" does not have a set function! [E007]`));

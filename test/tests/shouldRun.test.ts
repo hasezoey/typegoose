@@ -10,6 +10,7 @@ import {
   getModelWithString,
   isDocumentArray,
   modelOptions,
+  Passthrough,
   prop,
   queryMethod,
 } from '../../src/typegoose';
@@ -442,4 +443,41 @@ it('should not Error if get/set options are used and type is an class and is an 
   }
 
   buildSchema(ParentGetSetClassArray);
+});
+
+it('should make use of the "Passthrough" class', async () => {
+  const alsoSchema = new mongoose.Schema({
+    something: { type: { somePath: String } },
+    somethingExtra: { type: { someExtraPath: [String] } },
+  });
+
+  class SomeTestClass {
+    @prop({ type: () => new Passthrough({ somePath: String }) })
+    public something?: { somePath: string };
+
+    @prop({ type: new Passthrough({ someExtraPath: [String] }) })
+    public somethingExtra?: { someExtraPath: string[] };
+  }
+
+  const sch = buildSchema(SomeTestClass);
+  const somethingPath = sch.path('something');
+  const somethingExtraPath = sch.path('somethingExtra');
+  const alsoSomethingPath = alsoSchema.path('something');
+  const alsoSomethingExtraPath = alsoSchema.path('somethingExtra');
+
+  expect(somethingPath).toBeInstanceOf(mongoose.Schema.Types.Mixed);
+  expect(somethingExtraPath).toBeInstanceOf(mongoose.Schema.Types.Mixed);
+  expect(somethingPath).toStrictEqual(alsoSomethingPath);
+  expect(somethingExtraPath).toStrictEqual(alsoSomethingExtraPath);
+
+  expect(somethingPath).toEqual(
+    expect.objectContaining({
+      options: { type: { somePath: String } },
+    })
+  );
+  expect(somethingExtraPath).toEqual(
+    expect.objectContaining({
+      options: { type: { someExtraPath: [String] } },
+    })
+  );
 });

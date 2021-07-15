@@ -290,3 +290,28 @@ export function getDiscriminatorModelForClass<U extends AnyParamConstructor<any>
 
   return addModelToTypegoose<U, QueryHelpers>(model, cl);
 }
+
+/**
+ * Use this class if raw mongoose for this path is wanted
+ * It is still recommended to use the typegoose classes directly for full type and validation support
+ * Note: using this, paths are of type "Mixed" (with some validation)
+ * @example
+ * ```ts
+ * class Dummy {
+ *   @prop({ type: () => new Passthrough({ somePath: String }) })
+ *   public somepath: { somePath: string };
+ * }
+ * ```
+ */
+// Note: for "SchemaDefinitionType", i have no clue what it does, but it is also defined on "mongoose.Schema" and kinda required for "mongoose.DocumentDefinition"
+export class Passthrough<SchemaDefinitionType = undefined> {
+  public raw: mongoose.SchemaDefinition<mongoose.DocumentDefinition<SchemaDefinitionType>>;
+
+  /**
+   * Use this like `new mongoose.Schema()`
+   * @param raw the Schema definition
+   */
+  constructor(raw: mongoose.SchemaDefinition<mongoose.DocumentDefinition<SchemaDefinitionType>>) {
+    this.raw = raw;
+  }
+}
